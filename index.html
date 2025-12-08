@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cat Live — Secure</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+body{margin:0;font-family:'Share Tech Mono',monospace;background:#111;color:#fff;text-align:center;}
+.wrap{max-width:980px;margin:28px auto;padding:20px;}
+.header{display:flex;align-items:center;gap:14px;justify-content:center;}
+.brand{width:80px;height:80px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6);}
+h1{margin:0;font-size:22px;letter-spacing:2px;color:#ff3b3b;text-shadow:0 0 12px #ff3b3b;}
+.card{background:rgba(0,0,0,0.72);padding:18px;border-radius:12px;margin:18px auto;max-width:840px;box-shadow:0 10px 40px rgba(0,0,0,0.7);}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
+.input{width:260px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff;text-align:center;}
+.btn{padding:10px 18px;border-radius:8px;border:0;background:#ff2d2d;color:#fff;cursor:pointer;font-weight:700;box-shadow:0 8px 24px rgba(255,45,45,0.12);}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);}
+.accounts{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;padding:6px;}
+.card-account{width:100%;height:240px;perspective:1200px;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.card-inner{width:100%;height:100%;border-radius:12px;position:relative;transition:transform .9s;transform-style:preserve-3d;box-shadow:0 10px 30px rgba(0,0,0,0.6);}
+.card-inner.flipped{transform:rotateY(180deg);}
+.face{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));}
+.face.front img{width:64px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.6);margin-bottom:8px;}
+.face.front h3{color:#0ff;margin:6px 0;font-size:15px;}
+.face.front .details{color:#98a8b9;font-size:13px;}
+.face.back{transform:rotateY(180deg);background:#0b0b0b;color:#fff;font-weight:800;font-size:28px;text-shadow:0 0 12px rgba(255,200,0,0.8);}
+.timer{display:inline-block;margin-left:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.03);font-weight:800;color:#ffea9a;}
+.badge{margin-top:10px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.03);font-weight:700;color:#ffd27a;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;color:#fff;}
+.modal{width:92%;max-width:420px;background:rgba(8,10,12,0.95);padding:22px;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.7);text-align:center;}
+.modal img{width:96px;height:96px;border-radius:12px;margin-bottom:8px;}
+.modal .title{font-size:20px;color:#ffd36b;margin-bottom:8px;}
+.modal .muted{color:#98a8b9;font-size:13px;margin-bottom:8px;}
+.modal .input{width:86%;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <img class="brand" src="https://iili.io/K0ZwJJR.md.jpg" alt="logo">
+    <h1>CAT LIVE</h1>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;color:#b9d5ff">Connected Manager</div>
+        <div style="font-weight:800;font-size:18px">Add Account & Watch Wins</div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Auto-lock in</div>
+        <span id="timerBadge" class="timer">05:00</span>
+      </div>
+    </div>
+    <div class="controls" style="margin-top:12px">
+      <input id="inpId" class="input" type="text" placeholder="ID (e.g. 278001)">
+      <input id="inpGmail" class="input" type="email" placeholder="Gmail (e.g. name@gmail.com)">
+      <input id="inpDevice" class="input" type="text" placeholder="Device (e.g. Galaxy A51)">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+      <button id="btnAdd" class="btn">Add to Connected</button>
+      <button id="btnLockNow" class="btn ghost">Lock Now</button>
+    </div>
+    <div id="statusMsg" class="badge" style="margin-top:14px;min-height:22px"></div>
+  </div>
+  <div class="accounts" id="accounts"></div>
+</div>
+
+<!-- Entry overlay -->
+<div id="entryOverlay" class="overlay">
+  <div class="modal">
+    <img src="https://iili.io/K0ZwJJR.md.jpg" alt="logo">
+    <div class="title">🔒 Enter Site Password</div>
+    <div class="muted">Password to enter</div>
+    <input id="entryInput" class="input" type="password" placeholder="Password">
+    <div style="margin-top:12px">
+      <button id="btnEntry" class="btn">Enter</button>
+    </div>
+    <div id="entryMsg" class="muted"></div>
+  </div>
+</div>
+
+<!-- Lock overlay -->
+<div id="lockOverlay" class="overlay hidden">
+  <div class="modal">
+    <img src="https://ibb.co.com/4Z83LfRk" alt="logo">
+    <div class="title">🔒 Session Locked</div>
+    <div class="muted">Enter password to unlock</div>
+    <input id="unlockInput" class="input" type="password" placeholder="Password">
+    <div style="margin-top:12px">
+      <button id="btnUnlock" class="btn">Unlock</button>
+    </div>
+    <div id="unlockMsg" class="muted"></div>
+  </div>
+</div>
+
+<script>
+// Passwords
+let ENTRY_PWD = "Jisan999";
+let UNLOCK_PWD = ENTRY_PWD;
+const NEW_PWD = "Jisan999";
+
+// Countdown & Auto-lock
+const AUTO_LOCK_MS = 5*60*1000;
+let countdownEndsAt = 0;
+let countdownInterval = null;
+
+const timerBadge = document.getElementById('timerBadge');
+const statusMsg = document.getElementById('statusMsg');
+
+// Entry overlay
+const entryOverlay = document.getElementById('entryOverlay');
+const entryInput = document.getElementById('entryInput');
+const btnEntry = document.getElementById('btnEntry');
+const entryMsg = document.getElementById('entryMsg');
+
+// Lock overlay
+const lockOverlay = document.getElementById('lockOverlay');
+const unlockInput = document.getElementById('unlockInput');
+const btnUnlock = document.getElementById('btnUnlock');
+const unlockMsg = document.getElementById('unlockMsg');
+
+// Accounts
+const accountsEl = document.getElementById('accounts');
+let accounts = [];
+const WIN_VALUES = ["A","B","C"];
+const WIN_COLORS = ["gold","deepskyblue","red"];
+
+// Format time
+function fmtTime(ms){ if(ms<0)ms=0; const s=Math.floor(ms/1000); const m=Math.floor(s/60); const sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
+
+// Start countdown
+function startCountdown(){
+  countdownEndsAt = Date.now() + AUTO_LOCK_MS;
+  if(countdownInterval) clearInterval(countdownInterval);
+  updateTimer();
+  countdownInterval = setInterval(updateTimer,1000);
+}
+
+// Update timer
+function updateTimer(){
+  const left = countdownEndsAt - Date.now();
+  timerBadge.textContent = fmtTime(left);
+  if(left <=0){
+    clearInterval(countdownInterval);
+    triggerLock();
+    ENTRY_PWD = NEW_PWD;
+    UNLOCK_PWD = NEW_PWD;
+  }
+}
+
+// Trigger lock
+function triggerLock(){
+  lockOverlay.classList.remove('hidden');
+  disableControls(true);
+  unlockInput.value = '';
+  unlockMsg.textContent = '';
+  statusMsg.textContent = 'Auto-locked';
+  statusMsg.style.color = '#ffd27a';
+}
+
+// Enable/disable controls
+function disableControls(disabled){
+  ['inpId','inpGmail','inpDevice','btnAdd','btnLockNow'].forEach(id=>{
+    document.getElementById(id).disabled = disabled;
+    document.getElementById(id).style.opacity = disabled?0.5:1;
+  });
+}
+
+// Entry password
+btnEntry.addEventListener('click',()=>{
+  if(entryInput.value===ENTRY_PWD){
+    entryOverlay.style.display='none';
+    startCountdown();
+  } else{
+    entryMsg.textContent='❌ Wrong password';
+    entryMsg.style.color='#ff8b8b';
+  }
+});
+entryInput.addEventListener('keyup',e=>{if(e.key==='Enter') btnEntry.click();});
+
+// Unlock password
+btnUnlock.addEventListener('click',()=>{
+  if(unlockInput.value===UNLOCK_PWD){
+    lockOverlay.classList.add('hidden');
+    disableControls(false);
+    statusMsg.textContent='Unlocked';
+    statusMsg.style.color='#a8ffb0';
+    startCountdown();
+  } else{
+    unlockMsg.textContent='❌ Wrong password';
+    unlockMsg.style.color='#ff8b8b';
+  }
+});
+
+// Add account
+btnAdd.addEventListener('click',()=>{
+  const id = document.getElementById('inpId').value.trim();
+  const gmail = document.getElementById('inpGmail').value.trim();
+  const device = document.getElementById('inpDevice').value.trim();
+  if(!id || !gmail || !device){statusMsg.textContent='❌ Fill all fields'; return;}
+  
+  const accDiv = document.createElement('div'); 
+  accDiv.className='card-account';
+  accDiv.innerHTML=`<div class="card-inner"><div class="face front"><img src="https://iili.io/K0ZwJJR.md.jpg"><h3>ID: ${id}<br>Gmail: ${gmail}</h3><p class="details">${device}</p></div><div class="face back">WIN: Loading...</div></div>`;
+  accountsEl.appendChild(accDiv);
+  accounts.push(accDiv);
+  statusMsg.textContent='✅ Account added';
+  
+  document.getElementById('inpId').value='';
+  document.getElementById('inpGmail').value='';
+  document.getElementById('inpDevice').value='';
+});
+
+// Update Win values every 10 seconds
+function updateWins(){
+  accounts.forEach(acc=>{
+    const back = acc.querySelector('.face.back');
+    const val = WIN_VALUES[Math.floor(Math.random()*WIN_VALUES.length)];
+    const color = WIN_COLORS[Math.floor(Math.random()*WIN_COLORS.length)];
+    back.textContent = 'WIN: '+val;
+    back.style.color=color;
+    back.style.textShadow=`0 0 10px ${color},0 0 20px ${color}`;
+    
+    const inner = acc.querySelector('.card-inner');
+    inner.classList.add('flipped');
+    setTimeout(()=>inner.classList.remove('flipped'),800);
+  });
+}
+setInterval(updateWins,10000);
+</script>
+</body>
+</html>
